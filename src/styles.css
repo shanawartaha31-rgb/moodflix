@@ -463,3 +463,11 @@ button.guest { background: none; border: 1px dashed var(--line); color: var(--mu
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
 }
+
+/* Auto-refresh feedback */
+.tune-note { color: var(--muted); font-size: 0.85rem; margin: -6px 20px 4px; }
+.results-tools { display: flex; align-items: center; gap: 12px; }
+.updating { display: inline-flex; align-items: center; gap: 8px; color: var(--muted); font-size: 0.88rem; }
+.updating::before { content: ''; width: 14px; height: 14px; border-radius: 50%; border: 2px solid var(--line); border-top-color: var(--amber); animation: spin 0.8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.grid.is-updating { opacity: 0.45; pointer-events: none; transition: opacity 0.2s; }

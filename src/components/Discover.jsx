@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { GENRES, MOODS, recommend } from '../lib/recommender.js';
 import { searchMovies, getTrailerKey, hasTmdbKey, img } from '../lib/tmdb.js';
 import MovieCard from './MovieCard.jsx';
@@ -28,6 +28,24 @@ export default function Discover({ user, requireLogin, profile, setProfile, onWa
   const [guestUsed, setGuestUsed] = useState(guestRunsUsed);
   const isGuest = authEnabled && !user;
   const guestLeft = Math.max(0, GUEST_FREE_RUNS - guestUsed);
+  const [updating, setUpdating] = useState(false);
+  const runRef = useRef(null);
+  const requestId = useRef(0); // ignore answers from older searches
+  const tuneKey = JSON.stringify(prefs) + '|' + [...profile.favGenres].sort().join(',');
+  const lastTuneKey = useRef(tuneKey);
+
+  // Refresh the picks automatically when genres or filters change.
+  // Waits a moment so dragging the rating slider doesn't fire a search per step.
+  useEffect(() => {
+    if (tuneKey === lastTuneKey.current) return;
+    if (!mood) {
+      lastTuneKey.current = tuneKey;
+      return;
+    }
+    const t = setTimeout(() => runRef.current?.(mood, { auto: true }), 500);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tuneKey]);
 
   if (!hasTmdbKey) {
     return (
@@ -37,9 +55,10 @@ export default function Discover({ user, requireLogin, profile, setProfile, onWa
     );
   }
 
-  async function run(m = mood) {
+  async function run(m = mood, { auto = false } = {}) {
     if (!m) return;
-    if (isGuest) {
+    // Automatic refreshes after changing filters don't use up a guest's free suggestions.
+    if (isGuest && !auto) {
       if (guestRunsUsed() >= GUEST_FREE_RUNS) {
         requireLogin(`You've used your ${GUEST_FREE_RUNS} free guest suggestions. Sign up free for unlimited suggestions — it takes 20 seconds.`);
         return;
@@ -48,18 +67,26 @@ export default function Discover({ user, requireLogin, profile, setProfile, onWa
       setGuestUsed(guestRunsUsed());
     }
     setMood(m);
-    setLoading(true);
+    lastTuneKey.current = tuneKey;
+    const id = ++requestId.current;
+    if (auto && results.length) setUpdating(true);
+    else setLoading(true);
     setError('');
     try {
       const list = await recommend({ moodKey: m, prefs, profile });
+      if (id !== requestId.current) return;
       setResults(list);
-      if (!list.length) setError('Nothing matched — try loosening the filters (language, era or rating).');
+      if (!list.length) setError('Nothing matched these filters — try another language, era or a lower rating.');
     } catch (e) {
-      setError(e.message);
+      if (id === requestId.current) setError(e.message);
     } finally {
-      setLoading(false);
+      if (id === requestId.current) {
+        setLoading(false);
+        setUpdating(false);
+      }
     }
-  }
+  }  runRef.current = run;
+
 
   async function doSearch(e) {
     e.preventDefault();
@@ -138,6 +165,9 @@ export default function Discover({ user, requireLogin, profile, setProfile, onWa
             {prefs.language !== 'any' && ` · ${LANGS.find(([v]) => v === prefs.language)?.[1]}`}
           </span>
         </summary>
+        <p className="tune-note" role="status">
+          {mood ? 'Your picks update automatically when you change anything here.' : 'Choose a mood above, and your picks will follow these settings.'}
+        </p>
         <div className="tune-body">
           <div className="tune-col">
             <h3>Genres you usually enjoy</h3>
@@ -243,9 +273,12 @@ export default function Discover({ user, requireLogin, profile, setProfile, onWa
             <h2>
               <span aria-hidden="true">{MOODS[mood]?.emoji}</span> {MOODS[mood]?.blurb}
             </h2>
-            <button onClick={() => run()}>Shuffle picks</button>
+            <div className="results-tools">
+              {updating && <span className="updating" role="status">Updating picks…</span>}
+              <button onClick={() => run()}>Shuffle picks</button>
+            </div>
           </div>
-          <div className="grid">
+          <div className={`grid ${updating ? 'is-updating' : ''}`} aria-busy={updating}>
             {results.map((m) => (
               <MovieCard
                 key={m.id}
