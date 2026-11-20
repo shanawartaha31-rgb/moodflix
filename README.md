@@ -32,6 +32,13 @@ Movie suggestions based on **your taste + how you feel right now**, and a **Watc
   - leaves out movies anyone in the room has already seen, liked or disliked.
 - The 6 picks appear for everyone. Each person gets one vote and the leader is highlighted. Press **▶ Trailer for everyone** to watch it in sync.
 
+**Accounts, guest mode & history**
+- First visit shows a welcome screen: **Sign up**, **Log in**, or **Try as a guest**.
+- Guests get 3 free mood suggestions and can join a friend's room. Creating rooms, Group mood and History ask them to sign up.
+- On sign-up/login, everything the guest liked/disliked/marked seen is moved into the account.
+- For logged-in users, likes, dislikes, seen movies and favourite genres are saved in Supabase (available on every device), and every video played in a Watch Party is logged (title, trailer/video, room, how many people, time).
+- The **History** tab shows stats, top genres, the watch log and the liked / not-for-me / seen lists, with remove buttons.
+
 ## How it works
 
 | Part | Tech |
@@ -50,12 +57,14 @@ Why Supabase and not my own WebSocket server? Vercel's serverless functions can'
 1. **TMDB key (free):** sign up at themoviedb.org → Settings → API → copy the *API Key (v3 auth)*.
 2. **Supabase (free):** create a project at supabase.com → Project Settings → API → copy the *Project URL* and the *anon public* key.
 3. Copy `.env.example` to `.env` and fill in the values.
-4. Run:
+4. **Create the database tables:** Supabase → **SQL Editor** → **New query** → paste everything from `supabase/schema.sql` → **Run**.
+5. **Auth settings:** Supabase → **Authentication → URL Configuration** → set **Site URL** to your Vercel URL, and add `http://localhost:5173` under **Redirect URLs**. (For quick testing you can turn off **Confirm email** under Authentication → Sign In / Providers → Email, so new accounts can log in immediately.)
+6. Run:
    ```bash
    npm install
    npm run dev
    ```
-5. To test sync, open the app in two browser windows (or on your phone using your PC's LAN IP: `npm run dev -- --host`).
+7. To test sync, open the app in two browser windows (or on your phone using your PC's LAN IP: `npm run dev -- --host`).
 
 ## Deploy to Vercel
 
@@ -70,6 +79,6 @@ Push to GitHub → import in Vercel (framework: Vite) → add the same four `VIT
 
 ## Ideas for next steps
 
-- Supabase Auth + a `profiles` table so taste follows you across devices.
+- "Forgot password" flow and Google sign-in.
 - Emoji reactions that float over the video.
 - Voice/video chat with WebRTC.

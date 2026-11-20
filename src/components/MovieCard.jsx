@@ -5,6 +5,7 @@ export default function MovieCard({ movie, onLike, onDislike, onSeen, onWatchTog
   const [open, setOpen] = useState(false);
   const [providers, setProviders] = useState(null);
   const year = movie.release_date?.slice(0, 4);
+  const [mainReason, ...otherReasons] = movie.reasons || [];
 
   async function toggle() {
     setOpen((o) => !o);
@@ -12,35 +13,44 @@ export default function MovieCard({ movie, onLike, onDislike, onSeen, onWatchTog
   }
 
   return (
-    <div className="movie">
-      <div className="poster" onClick={toggle}>
-        {movie.poster_path ? <img src={img(movie.poster_path)} alt={movie.title} loading="lazy" /> : <div className="noposter">{movie.title}</div>}
+    <article className={`movie ${open ? 'open' : ''}`}>
+      <button className="poster" onClick={toggle} aria-expanded={open} aria-label={`${movie.title} — show details`}>
+        {movie.poster_path ? (
+          <img src={img(movie.poster_path, 'w342')} alt="" loading="lazy" />
+        ) : (
+          <span className="noposter">{movie.title}</span>
+        )}
         <span className="rating">★ {movie.vote_average?.toFixed(1)}</span>
-      </div>
+        <span className="poster-title">
+          <strong>{movie.title}</strong>
+          {year && <span>{year}</span>}
+        </span>
+      </button>
+
       <div className="movie-body">
-        <h3 onClick={toggle}>
-          {movie.title} {year && <span className="muted">({year})</span>}
-        </h3>
-        <ul className="reasons">
-          {movie.reasons?.slice(0, 2).map((r) => <li key={r}>{r}</li>)}
-        </ul>
+        {mainReason && <p className="why">{mainReason}</p>}
+        {otherReasons.length > 0 && (
+          <div className="tags">
+            {otherReasons.slice(0, 2).map((r) => <span key={r} className="tag">{r}</span>)}
+          </div>
+        )}
+
         {open && (
           <div className="details">
             <p>{movie.overview || 'No description available.'}</p>
-            {providers?.length > 0 && (
-              <p className="muted">Stream on: {providers.map((p) => p.provider_name).join(', ')}</p>
-            )}
+            {providers?.length > 0 && <p className="muted">Streaming on {providers.map((p) => p.provider_name).join(', ')}</p>}
           </div>
         )}
+
         <div className="actions">
-          <button title="Seen it and loved it" onClick={() => onLike(movie)}>👍</button>
-          <button title="Not for me" onClick={() => onDislike(movie)}>👎</button>
-          <button title="Already seen" onClick={() => onSeen(movie)}>✓ Seen</button>
-          <button className="primary" title="Watch the trailer together" onClick={() => onWatchTogether(movie)}>
-            ▶ Together
-          </button>
+          <button className="primary together" onClick={() => onWatchTogether(movie)}>Watch trailer together</button>
+          <div className="quick">
+            <button className="icon" title="Seen it and loved it" aria-label="Loved it" onClick={() => onLike(movie)}>👍</button>
+            <button className="icon" title="Not for me" aria-label="Not for me" onClick={() => onDislike(movie)}>👎</button>
+            <button className="icon" title="Already seen" aria-label="Already seen" onClick={() => onSeen(movie)}>✓</button>
+          </div>
         </div>
       </div>
-    </div>
+    </article>
   );
 }

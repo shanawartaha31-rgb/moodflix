@@ -9,15 +9,15 @@ export const GENRES = {
 
 /** Each mood pulls toward some genres (boost) and away from others (avoid). */
 export const MOODS = {
-  happy:    { label: 'Happy',              emoji: '😄', blurb: 'Keep the good vibes going',  boost: [35, 10751, 16, 10402, 12], avoid: [27, 10752] },
-  down:     { label: 'Low, need comfort',  emoji: '🫂', blurb: 'Warm, feel-good stories',    boost: [35, 10749, 10751, 16],     avoid: [27, 53, 10752, 80] },
-  cry:      { label: 'Want a good cry',    emoji: '😢', blurb: 'Emotional, moving drama',    boost: [18, 10749],                avoid: [27, 35] },
-  pumped:   { label: 'Pumped',             emoji: '⚡', blurb: 'Adrenaline and action',      boost: [28, 12, 53, 878],          avoid: [10749, 99] },
-  spooky:   { label: 'Want a scare',       emoji: '👻', blurb: 'Horror and suspense',        boost: [27, 53, 9648],             avoid: [10751, 16] },
-  curious:  { label: 'Curious',            emoji: '🧠', blurb: 'Mind-benders, real stories', boost: [878, 9648, 99, 36],        avoid: [] },
-  romantic: { label: 'Romantic',           emoji: '💘', blurb: 'Love stories',               boost: [10749],                    avoid: [27, 10752] },
-  chill:    { label: 'Tired, chill',       emoji: '🛋️', blurb: 'Easy, light watching',       boost: [16, 35, 14, 10751],        avoid: [27, 10752, 53] },
-  surprise: { label: 'Surprise me',        emoji: '🎲', blurb: 'Random but good',            boost: [],                         avoid: [] },
+  happy:    { color: '#FFC93C', label: 'Happy',              emoji: '😄', blurb: 'Keep the good vibes going',  boost: [35, 10751, 16, 10402, 12], avoid: [27, 10752] },
+  down:     { color: '#F59AB8', label: 'Low, need comfort',  emoji: '🫂', blurb: 'Warm, feel-good stories',    boost: [35, 10749, 10751, 16],     avoid: [27, 53, 10752, 80] },
+  cry:      { color: '#6FA8FF', label: 'Want a good cry',    emoji: '😢', blurb: 'Emotional, moving drama',    boost: [18, 10749],                avoid: [27, 35] },
+  pumped:   { color: '#FF5D5D', label: 'Pumped',             emoji: '⚡', blurb: 'Adrenaline and action',      boost: [28, 12, 53, 878],          avoid: [10749, 99] },
+  spooky:   { color: '#A586FF', label: 'Want a scare',       emoji: '👻', blurb: 'Horror and suspense',        boost: [27, 53, 9648],             avoid: [10751, 16] },
+  curious:  { color: '#3FD7C2', label: 'Curious',            emoji: '🧠', blurb: 'Mind-benders, real stories', boost: [878, 9648, 99, 36],        avoid: [] },
+  romantic: { color: '#FF79B0', label: 'Romantic',           emoji: '💘', blurb: 'Love stories',               boost: [10749],                    avoid: [27, 10752] },
+  chill:    { color: '#8FD6A8', label: 'Tired, chill',       emoji: '🛋️', blurb: 'Easy, light watching',       boost: [16, 35, 14, 10751],        avoid: [27, 10752, 53] },
+  surprise: { color: '#FFB547', label: 'Surprise me',        emoji: '🎲', blurb: 'Random but good',            boost: [],                         avoid: [] },
 };
 
 const RUNTIME = {

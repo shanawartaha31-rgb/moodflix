@@ -5,6 +5,8 @@ import GroupMood from './GroupMood.jsx';
 import { MOODS, recommendGroup, shareableTaste } from '../lib/recommender.js';
 import { getTrailerKey } from '../lib/tmdb.js';
 import { moveTo, slimMovie } from '../lib/storage.js';
+import { displayName, authEnabled } from '../lib/auth.js';
+import { logWatch } from '../lib/db.js';
 import { Reactions, ReactionBar, RatingPrompt } from './Extras.jsx';
 
 const clientId = crypto.randomUUID();
@@ -21,7 +23,7 @@ function parseSource(input) {
   return null;
 }
 
-export default function WatchParty({ profile, setProfile, initialRoom, pendingSource, onSourceUsed }) {
+export default function WatchParty({ user, requireLogin, profile, setProfile, initialRoom, pendingSource, onSourceUsed }) {
   const [name, setName] = useState(() => localStorage.getItem('moodflix_name') || '');
   const [codeInput, setCodeInput] = useState(initialRoom || '');
   const [room, setRoom] = useState(null);
@@ -54,6 +56,10 @@ export default function WatchParty({ profile, setProfile, initialRoom, pendingSo
   const picksRef = useRef([]);
   const votesRef = useRef({});
   const profileRef = useRef(profile);
+  const userRef = useRef(user);
+  userRef.current = user;
+  const roomRef = useRef(null);
+  const membersRef = useRef([]);
   const ratingForRef = useRef(null);
   const lastReactRef = useRef(0);
   const lastControlRef = useRef(0); // last play/pause/seek/load — drift correction waits after it
@@ -63,6 +69,8 @@ export default function WatchParty({ profile, setProfile, initialRoom, pendingSo
   votesRef.current = votes;
   profileRef.current = profile;
   ratingForRef.current = ratingFor;
+  roomRef.current = room;
+  membersRef.current = members;
 
   // What I share with the room via presence: name, mood and a compact taste summary.
   const presence = () => ({
@@ -126,7 +134,7 @@ export default function WatchParty({ profile, setProfile, initialRoom, pendingSo
   function join(code) {
     if (!supabase) return;
     leave();
-    const myName = name.trim() || 'Guest';
+    const myName = (user ? displayName(user) : name.trim()) || 'Guest';
     myNameRef.current = myName;
     localStorage.setItem('moodflix_name', myName);
     gotStateRef.current = false;
@@ -273,7 +281,18 @@ export default function WatchParty({ profile, setProfile, initialRoom, pendingSo
     setChat((c) => [...c.slice(-60), { system: true, text: `You're feeling ${MOODS[key].emoji} ${MOODS[key].label}` }]);
   }
 
+  // Save "watched" to the user's history the first time a video actually plays.
+  function noteWatched() {
+    const u = userRef.current;
+    const s = sourceRef.current;
+    if (!u || !s) return;
+    logWatch(u.id, { source: s, room: roomRef.current, people: membersRef.current.length || 1 }).catch((e) =>
+      console.warn('Could not save watch history', e)
+    );
+  }
+
   async function findForGroup() {
+    if (!requireLogin('Group mood is for members. Sign up free to find movies that suit your whole group.')) return;
     setFinding(true);
     setError('');
     try {
@@ -356,28 +375,63 @@ export default function WatchParty({ profile, setProfile, initialRoom, pendingSo
   }
 
   if (!room) {
+    const guest = authEnabled && !user;
     return (
-      <div className="card lobby">
-        <h2>Watch together 🍿</h2>
-        <p className="muted">Everyone in a room sees the same video, and play / pause / skip happen for all of you at once — on any device.</p>
-        {pendingSource && <p>Ready to share: <strong>{pendingSource.title}</strong></p>}
-        <label>
-          Your name
-          <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Shown to others in the room" />
-        </label>
-        <div className="row">
-          <button className="primary" onClick={() => join(makeCode())}>Create a room</button>
+      <div className="lobby">
+        <div className="lobby-intro">
+          <h2 className="hero-title">Watch together, from anywhere.</h2>
+          <p className="hero-sub">
+            Everyone in a room sees the same video. Play, pause and skip happen for all of you at once — phone, laptop, anywhere.
+          </p>
+          {pendingSource && <p className="ready">Ready to share: <strong>{pendingSource.title}</strong></p>}
+          {user ? (
+            <p className="muted">You'll appear as <strong>{displayName(user)}</strong></p>
+          ) : (
+            <label className="field">
+              Your name
+              <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Shown to others in the room" />
+            </label>
+          )}
         </div>
-        <div className="row">
-          <input
-            value={codeInput}
-            onChange={(e) => setCodeInput(e.target.value.toUpperCase())}
-            placeholder="Room code, e.g. K3P9ZQ"
-            maxLength={6}
-          />
-          <button onClick={() => codeInput.trim().length === 6 && join(codeInput.trim())}>Join</button>
+
+        <div className="lobby-options">
+          <div className="lobby-option host">
+            <h3>Host a room</h3>
+            <p className="muted">Get a code and invite link to send to your friends.</p>
+            <button
+              className="primary big"
+              onClick={() =>
+                requireLogin("Hosting rooms is for members. Sign up free to start a watch party — guests can still join a friend's room with a code.") &&
+                join(makeCode())
+              }
+            >
+              {guest ? '🔒 Create a room' : 'Create a room'}
+            </button>
+            {guest && <p className="muted small-text">Free account needed to host.</p>}
+          </div>
+
+          <form
+            className="lobby-option"
+            onSubmit={(e) => {
+              e.preventDefault();
+              if (codeInput.trim().length === 6) join(codeInput.trim());
+              else setError('Room codes have 6 letters or numbers.');
+            }}
+          >
+            <h3>Join a friend</h3>
+            <p className="muted">Type the 6-character code they sent you.</p>
+            <input
+              className="code-input"
+              value={codeInput}
+              onChange={(e) => setCodeInput(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ''))}
+              placeholder="K3P9ZQ"
+              maxLength={6}
+              aria-label="Room code"
+            />
+            <button type="submit" className="big">Join room</button>
+          </form>
         </div>
-        {error && <p className="warn-text">{error}</p>}
+        {error && <p className="notice">{error}</p>}
       </div>
     );
   }
@@ -388,8 +442,9 @@ export default function WatchParty({ profile, setProfile, initialRoom, pendingSo
     <div className="party">
       <div className="party-main">
         <div className="row spread">
-          <h2>
-            Room <span className="code">{room}</span>
+          <h2 className="room-title">
+            <span className="muted">Room</span> <span className="code">{room}</span>
+            <span className="live">{members.length} watching</span>
           </h2>
           <div className="row">
             <button
@@ -403,7 +458,7 @@ export default function WatchParty({ profile, setProfile, initialRoom, pendingSo
                 }
               }}
             >
-              {copied ? 'Copied!' : '🔗 Copy invite link'}
+              {copied ? 'Link copied' : 'Copy invite link'}
             </button>
             <button onClick={leave}>Leave</button>
           </div>
@@ -422,6 +477,7 @@ export default function WatchParty({ profile, setProfile, initialRoom, pendingSo
                 send('control', a);
               }}
               onEnded={() => source.movie && openRating(source.movie)}
+              onStartedPlaying={noteWatched}
               overlay={
                 <>
                   <Reactions items={reactions} />

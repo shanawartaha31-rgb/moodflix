@@ -22,14 +22,14 @@ export default function GroupMood({
   return (
     <section className="card group">
       <div className="row spread">
-        <h2>🎭 Group mood</h2>
+        <h2>Group mood</h2>
         <span className="muted">{picked} of {members.length} picked a mood</span>
       </div>
 
       <p className="muted">What are you in the mood for?</p>
       <div className="mood-mini">
         {Object.entries(MOODS).map(([key, m]) => (
-          <button key={key} className={`chip ${myMood === key ? 'on' : ''}`} onClick={() => onPickMood(key)}>
+          <button key={key} className={`chip mood-chip ${myMood === key ? 'on' : ''}`} style={{ '--tile': m.color }} onClick={() => onPickMood(key)} aria-pressed={myMood === key}>
             {m.emoji} {m.label}
           </button>
         ))}
@@ -49,7 +49,7 @@ export default function GroupMood({
           {LANGS.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
         </select>
         <button className="primary" disabled={!picked || finding} onClick={onFind}>
-          {finding ? 'Finding…' : '✨ Find a movie for all of us'}
+          {finding ? 'Finding…' : 'Find a movie for all of us'}
         </button>
       </div>
 

@@ -31,7 +31,7 @@ const fmt = (t) => {
  * Native controls are hidden: every play/pause/seek goes through our own buttons,
  * so local actions can be broadcast and remote ones applied without feedback loops.
  */
-const SyncedPlayer = forwardRef(function SyncedPlayer({ source, onReady, onLocalAction, onEnded, overlay, extraControls }, ref) {
+const SyncedPlayer = forwardRef(function SyncedPlayer({ source, onReady, onLocalAction, onEnded, onStartedPlaying, overlay, extraControls }, ref) {
   const wrapRef = useRef(null);
   const videoRef = useRef(null);
   const ytHostRef = useRef(null);
@@ -43,6 +43,9 @@ const SyncedPlayer = forwardRef(function SyncedPlayer({ source, onReady, onLocal
   onReadyRef.current = onReady;
   const onEndedRef = useRef(onEnded);
   onEndedRef.current = onEnded;
+  const onStartedRef = useRef(onStartedPlaying);
+  onStartedRef.current = onStartedPlaying;
+  const startedRef = useRef(false); // fired onStartedPlaying for this video yet?
   const ended = () => {
     intentRef.current = false;
     onEndedRef.current?.();
@@ -99,6 +102,7 @@ const SyncedPlayer = forwardRef(function SyncedPlayer({ source, onReady, onLocal
   useEffect(() => {
     readyRef.current = false;
     intentRef.current = false;
+    startedRef.current = false;
     setReady(false);
     setBlocked(false);
     setTime(0);
@@ -148,6 +152,10 @@ const SyncedPlayer = forwardRef(function SyncedPlayer({ source, onReady, onLocal
       setDur(r.getDuration());
       const actual = r.actuallyPlaying();
       setPlaying(actual);
+      if (actual && !startedRef.current) {
+        startedRef.current = true;
+        onStartedRef.current?.();
+      }
       if (intentRef.current && !actual) {
         if (!stuckSince.current) stuckSince.current = Date.now();
         else if (Date.now() - stuckSince.current > 2500) setBlocked(true);
