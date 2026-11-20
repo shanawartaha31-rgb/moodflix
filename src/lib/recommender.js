@@ -7,18 +7,29 @@ export const GENRES = {
   53: 'Thriller', 10752: 'War', 37: 'Western',
 };
 
-/** Each mood pulls toward some genres (boost) and away from others (avoid). */
+/**
+ * core  – a movie MUST have at least one of these genres to count for the mood
+ *         (e.g. "Want a scare" only shows movies tagged Horror).
+ * boost – extra genres that make a core movie a better fit (Horror + Mystery ranks higher).
+ * avoid – genres that never appear for this mood.
+ */
 export const MOODS = {
-  happy:    { color: '#FFC93C', label: 'Happy',              emoji: '😄', blurb: 'Keep the good vibes going',  boost: [35, 10751, 16, 10402, 12], avoid: [27, 10752] },
-  down:     { color: '#F59AB8', label: 'Low, need comfort',  emoji: '🫂', blurb: 'Warm, feel-good stories',    boost: [35, 10749, 10751, 16],     avoid: [27, 53, 10752, 80] },
-  cry:      { color: '#6FA8FF', label: 'Want a good cry',    emoji: '😢', blurb: 'Emotional, moving drama',    boost: [18, 10749],                avoid: [27, 35] },
-  pumped:   { color: '#FF5D5D', label: 'Pumped',             emoji: '⚡', blurb: 'Adrenaline and action',      boost: [28, 12, 53, 878],          avoid: [10749, 99] },
-  spooky:   { color: '#A586FF', label: 'Want a scare',       emoji: '👻', blurb: 'Horror and suspense',        boost: [27, 53, 9648],             avoid: [10751, 16] },
-  curious:  { color: '#3FD7C2', label: 'Curious',            emoji: '🧠', blurb: 'Mind-benders, real stories', boost: [878, 9648, 99, 36],        avoid: [] },
-  romantic: { color: '#FF79B0', label: 'Romantic',           emoji: '💘', blurb: 'Love stories',               boost: [10749],                    avoid: [27, 10752] },
-  chill:    { color: '#8FD6A8', label: 'Tired, chill',       emoji: '🛋️', blurb: 'Easy, light watching',       boost: [16, 35, 14, 10751],        avoid: [27, 10752, 53] },
-  surprise: { color: '#FFB547', label: 'Surprise me',        emoji: '🎲', blurb: 'Random but good',            boost: [],                         avoid: [] },
+  happy:    { color: '#FFC93C', label: 'Happy',             emoji: '😄', blurb: 'Comedies to keep the good vibes going', core: [35],              boost: [10751, 16, 10402, 12, 10749], avoid: [27, 53, 10752, 80] },
+  down:     { color: '#F59AB8', label: 'Low, need comfort', emoji: '🫂', blurb: 'Warm, feel-good stories',              core: [35, 10751, 16],   boost: [10749, 10402, 14],            avoid: [27, 53, 10752, 80] },
+  cry:      { color: '#6FA8FF', label: 'Want a good cry',   emoji: '😢', blurb: 'Emotional, moving drama',              core: [18],              boost: [10749, 10751, 36, 10752],     avoid: [27, 35, 28] },
+  pumped:   { color: '#FF5D5D', label: 'Pumped',            emoji: '⚡', blurb: 'Adrenaline-packed action',             core: [28],              boost: [12, 53, 878, 80],             avoid: [10749, 99, 10751] },
+  spooky:   { color: '#A586FF', label: 'Want a scare',      emoji: '👻', blurb: 'Proper horror',                        core: [27],              boost: [53, 9648],                    avoid: [10751, 16, 35] },
+  curious:  { color: '#3FD7C2', label: 'Curious',           emoji: '🧠', blurb: 'Mind-benders, mysteries, true stories', core: [878, 9648, 99],  boost: [36, 53, 18],                  avoid: [10751, 16] },
+  romantic: { color: '#FF79B0', label: 'Romantic',          emoji: '💘', blurb: 'Love stories',                         core: [10749],           boost: [18, 35],                      avoid: [27, 10752, 28] },
+  chill:    { color: '#8FD6A8', label: 'Tired, chill',      emoji: '🛋️', blurb: 'Easy, light watching',                 core: [35, 16, 10751],   boost: [14, 12, 10402],               avoid: [27, 10752, 53, 80] },
+  surprise: { color: '#FFB547', label: 'Surprise me',       emoji: '🎲', blurb: 'Random but good',                      core: [],                boost: [],                            avoid: [] },
 };
+
+/** Does a movie (by its genre ids) belong to a mood? */
+export function fitsMood(genreIds, mood) {
+  if (genreIds.some((g) => mood.avoid.includes(g))) return false;
+  return !mood.core.length || genreIds.some((g) => mood.core.includes(g));
+}
 
 const RUNTIME = {
   any: {},
@@ -52,7 +63,7 @@ export async function recommend({ moodKey, prefs, profile }) {
     'vote_average.gte': prefs.minRating || undefined,
     // Smaller film industries have fewer TMDB votes, so relax the threshold there.
     'vote_count.gte': prefs.language === 'any' ? 200 : 15,
-    with_genres: mood.boost.length ? mood.boost.join('|') : undefined, // "|" = OR
+    with_genres: mood.core.length ? mood.core.join('|') : undefined, // must have one of the core genres
     without_genres: mood.avoid.length ? mood.avoid.join(',') : undefined,
     with_original_language: prefs.language === 'any' ? undefined : prefs.language,
     ...RUNTIME[prefs.runtime],
@@ -74,7 +85,8 @@ export async function recommend({ moodKey, prefs, profile }) {
     [...Object.keys(profile.liked), ...Object.keys(profile.disliked), ...Object.keys(profile.seen)].map(Number)
   );
   const pool = new Map();
-  for (const p of pages) for (const m of p.results || []) if (!exclude.has(m.id)) pool.set(m.id, m);
+  for (const p of pages)
+    for (const m of p.results || []) if (!exclude.has(m.id) && fitsMood(m.genre_ids || [], mood)) pool.set(m.id, m);
 
   const taste = tasteWeights(profile);
   const fav = new Set(profile.favGenres);
@@ -83,12 +95,15 @@ export async function recommend({ moodKey, prefs, profile }) {
   return [...pool.values()]
     .map((m) => {
       const g = m.genre_ids || [];
-      const moodHits = g.filter((x) => mood.boost.includes(x));
+      const coreHits = g.filter((x) => mood.core.includes(x));
+      const boostHits = g.filter((x) => mood.boost.includes(x));
+      // TMDB lists a movie's main genre first, so a core genre in first place is a stronger fit.
+      const coreIsMain = mood.core.includes(g[0]);
       const favHits = g.filter((x) => fav.has(x));
       const tasteScore = g.reduce((s, x) => s + (taste[x] || 0), 0);
 
       const score =
-        moodHits.length * 2 +
+        coreHits.length * 3 + (coreIsMain ? 2 : 0) + boostHits.length * 1 +
         favHits.length * 2.5 +
         tasteScore * 3 +
         (m.vote_average / 10) * 4 +
@@ -96,7 +111,8 @@ export async function recommend({ moodKey, prefs, profile }) {
         Math.random() * 0.8; // a little variety each run
 
       const reasons = [];
-      if (moodHits.length) reasons.push(`Fits your mood: ${moodHits.map((x) => GENRES[x]).join(', ')}`);
+      const moodGenres = [...coreHits, ...boostHits].map((x) => GENRES[x]).filter(Boolean);
+      if (moodGenres.length) reasons.push(`Fits your mood: ${moodGenres.join(' + ')}`);
       if (favHits.length) reasons.push(`Your genres: ${favHits.map((x) => GENRES[x]).join(', ')}`);
       const similar = likedList
         .map((l) => ({ l, overlap: (l.genre_ids || []).filter((x) => g.includes(x)).length }))
@@ -136,8 +152,9 @@ export async function recommendGroup({ members, language = 'any', minRating = 6 
 
   // Genres wanted by the most people go into the search.
   const want = {};
-  for (const v of voters) for (const g of MOODS[v.mood].boost) want[g] = (want[g] || 0) + 1;
-  const boosted = Object.entries(want).sort((a, b) => b[1] - a[1]).slice(0, 6).map(([g]) => Number(g));
+  for (const v of voters) for (const g of MOODS[v.mood].core) want[g] = (want[g] || 0) + 1;
+  // Search every voter's core genres, so each person's mood has candidates in the pool.
+  const boosted = Object.keys(want).map(Number);
 
   // Only exclude a genre if at least half the group wants to avoid it and nobody wants it.
   const avoidCount = {};
@@ -175,14 +192,15 @@ export async function recommendGroup({ members, language = 'any', minRating = 6 
   return [...pool.values()]
     .map((m) => {
       const g = m.genre_ids || [];
-      const happy = voters.filter((v) => !MOODS[v.mood].boost.length || g.some((x) => MOODS[v.mood].boost.includes(x)));
+      const happy = voters.filter((v) => !MOODS[v.mood].core.length || g.some((x) => MOODS[v.mood].core.includes(x)));
+      const extra = voters.filter((v) => g.some((x) => MOODS[v.mood].boost.includes(x))).length;
       const clash = voters.filter((v) => g.some((x) => MOODS[v.mood].avoid.includes(x)));
       const fit = (happy.length - clash.length * 1.5) / voters.length;
       const favFit = g.reduce((s, x) => s + (favCount[x] || 0), 0) / n;
       const tasteFit = g.reduce((s, x) => s + (taste[x] || 0), 0);
 
       const score =
-        fit * 6 + favFit * 2 + tasteFit * 2 + (m.vote_average / 10) * 4 +
+        fit * 6 + (extra / voters.length) * 1.5 + favFit * 2 + tasteFit * 2 + (m.vote_average / 10) * 4 +
         Math.log10(1 + m.popularity) * 0.5 + Math.random() * 0.5;
 
       const reasons = [`Fits ${happy.length} of ${voters.length} moods`];
@@ -191,11 +209,13 @@ export async function recommendGroup({ members, language = 'any', minRating = 6 
       if (shared.length) reasons.push(`Shared favourite: ${shared.join(', ')}`);
       if (m.vote_average >= 7.5) reasons.push(`Highly rated (${m.vote_average.toFixed(1)}/10)`);
 
+      if (!happy.length) return null; // fits nobody's mood
       return {
         id: m.id, title: m.title, poster_path: m.poster_path, release_date: m.release_date,
         vote_average: m.vote_average, overview: m.overview, genre_ids: g, reasons, score,
       };
     })
+    .filter(Boolean)
     .sort((a, b) => b.score - a.score)
     .slice(0, 6);
 }
