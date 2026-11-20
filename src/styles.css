@@ -700,3 +700,47 @@ button:active:not(:disabled) { transform: scale(0.97); }
 @media (max-width: 760px) {
   .mood:nth-child(odd):hover:not(:disabled), .mood:nth-child(even):hover:not(:disabled) { transform: none; }
 }
+
+/* =========================================================
+   Where to watch
+   ========================================================= */
+.wtw { display: flex; align-items: center; gap: 8px; min-height: 30px; }
+.wtw-label { font-size: 0.75rem; color: var(--muted); font-weight: 600; white-space: nowrap; }
+.wtw-logos { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.wtw-logo {
+  display: grid; place-items: center;
+  width: 30px; height: 30px; border-radius: 9px; overflow: hidden;
+  background: var(--ink-3); color: var(--text); font-size: 0.7rem; font-weight: 700; text-decoration: none;
+  box-shadow: 0 0 0 1px #ffffff14;
+  transition: transform 0.15s cubic-bezier(.3, 1.6, .5, 1), box-shadow 0.15s;
+}
+.wtw-logo img { width: 100%; height: 100%; object-fit: cover; }
+.wtw-logo:hover { transform: translateY(-2px) scale(1.1); box-shadow: 0 0 0 2px var(--sunny); }
+.wtw-more { font-size: 0.75rem; color: var(--muted); font-weight: 700; }
+.wtw-none { font-size: 0.78rem; color: var(--muted); margin: 0; min-height: 30px; display: flex; align-items: center; }
+.wtw-loading { gap: 6px; }
+.wtw-loading span { width: 30px; height: 30px; border-radius: 9px; background: linear-gradient(100deg, var(--ink-2) 30%, var(--ink-3) 50%, var(--ink-2) 70%); background-size: 200% 100%; animation: shimmer 1.3s linear infinite; }
+
+.wtw-full { margin-top: 10px; padding: 12px; border-radius: 16px; background: color-mix(in srgb, var(--cyan) 8%, var(--ink-2)); border: 1px solid color-mix(in srgb, var(--cyan) 25%, var(--line)); }
+.wtw-full h4 { font-family: var(--font-display); font-size: 0.95rem; margin: 0 0 8px; }
+.wtw-group { display: grid; gap: 4px; margin-bottom: 8px; }
+.wtw-full .wtw-logo { width: 36px; height: 36px; border-radius: 10px; }
+.wtw-credit { font-size: 0.75rem; color: var(--muted); margin: 4px 0 0; }
+.wtw-credit a { color: var(--cyan); font-weight: 600; }
+
+/* Fine-tune: country + services */
+.wtw-heading { margin-top: 22px; }
+.field-label { font-size: 0.88rem; color: var(--muted); font-weight: 500; margin: 14px 0 6px; }
+.services { display: flex; flex-wrap: wrap; gap: 6px; }
+.service {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 4px 12px 4px 4px; border-radius: 999px;
+  font-size: 0.82rem; font-weight: 600;
+  background: var(--ink-3);
+}
+.service img { width: 26px; height: 26px; border-radius: 50%; object-fit: cover; }
+.service.on { background: color-mix(in srgb, var(--cyan) 22%, var(--ink-3)); border-color: var(--cyan); box-shadow: 0 0 14px -4px var(--cyan); }
+.service.on::after { content: '✓'; color: var(--cyan); }
+.check { display: flex; align-items: center; gap: 10px; margin-top: 12px; font-size: 0.9rem; cursor: pointer; }
+.check input { width: 18px; height: 18px; accent-color: var(--pink); }
+.pick-body .wtw { margin: 2px 0; }

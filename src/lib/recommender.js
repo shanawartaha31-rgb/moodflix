@@ -55,6 +55,14 @@ export function tasteWeights(profile) {
   return w;
 }
 
+/** Streaming filters: only my services, or anything streamable in my country. */
+function watchParams(prefs) {
+  if (!prefs.region) return {};
+  if (prefs.services?.length) return { with_watch_providers: prefs.services.join('|'), watch_region: prefs.region };
+  if (prefs.onlyStreamable) return { with_watch_monetization_types: 'flatrate|free|ads', watch_region: prefs.region };
+  return {};
+}
+
 export async function recommend({ moodKey, prefs, profile }) {
   const mood = MOODS[moodKey];
   const params = {
@@ -68,6 +76,7 @@ export async function recommend({ moodKey, prefs, profile }) {
     with_original_language: prefs.language === 'any' ? undefined : prefs.language,
     ...RUNTIME[prefs.runtime],
     ...ERA[prefs.era],
+    ...watchParams(prefs),
   };
 
   let pages;

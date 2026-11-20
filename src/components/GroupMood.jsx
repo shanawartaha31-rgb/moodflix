@@ -1,5 +1,6 @@
 import { MOODS } from '../lib/recommender.js';
-import { img } from '../lib/tmdb.js';
+import { img, getRegion } from '../lib/tmdb.js';
+import WhereToWatch from './WhereToWatch.jsx';
 import { LANGS } from './Discover.jsx';
 import MoodIcon from './MoodIcon.jsx';
 
@@ -69,6 +70,7 @@ export default function GroupMood({
                   <ul className="reasons">
                     {p.reasons.slice(0, 3).map((r) => <li key={r}>{r}</li>)}
                   </ul>
+                  <WhereToWatch movie={p} region={getRegion()} compact />
                   <div className="actions">
                     <button className={myVote === p.id ? 'voted' : ''} onClick={() => onVote(p.id)}>
                       🗳 {myVote === p.id ? 'Voted' : 'Vote'} {count > 0 && `(${count})`}

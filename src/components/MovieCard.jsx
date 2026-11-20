@@ -1,16 +1,13 @@
 import { useState } from 'react';
-import { img, getProviders } from '../lib/tmdb.js';
+import { img } from '../lib/tmdb.js';
+import WhereToWatch from './WhereToWatch.jsx';
 
-export default function MovieCard({ movie, onLike, onDislike, onSeen, onWatchTogether }) {
+export default function MovieCard({ movie, region, onLike, onDislike, onSeen, onWatchTogether }) {
   const [open, setOpen] = useState(false);
-  const [providers, setProviders] = useState(null);
   const year = movie.release_date?.slice(0, 4);
   const [mainReason, ...otherReasons] = movie.reasons || [];
 
-  async function toggle() {
-    setOpen((o) => !o);
-    if (providers === null) setProviders(await getProviders(movie.id).catch(() => []));
-  }
+  const toggle = () => setOpen((o) => !o);
 
   return (
     <article className={`movie ${open ? 'open' : ''}`}>
@@ -35,10 +32,12 @@ export default function MovieCard({ movie, onLike, onDislike, onSeen, onWatchTog
           </div>
         )}
 
+        {!open && <WhereToWatch movie={movie} region={region} compact />}
+
         {open && (
           <div className="details">
             <p>{movie.overview || 'No description available.'}</p>
-            {providers?.length > 0 && <p className="muted">Streaming on {providers.map((p) => p.provider_name).join(', ')}</p>}
+            <WhereToWatch movie={movie} region={region} />
           </div>
         )}
 

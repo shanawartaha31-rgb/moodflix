@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { GENRES, MOODS, recommend } from '../lib/recommender.js';
-import { searchMovies, getTrailerKey, hasTmdbKey, img } from '../lib/tmdb.js';
+import { searchMovies, getTrailerKey, hasTmdbKey, img, COUNTRIES, countryName, getRegion, saveRegion, getRegionProviders } from '../lib/tmdb.js';
 import MovieCard from './MovieCard.jsx';
 import MoodIcon from './MoodIcon.jsx';
 
@@ -31,6 +31,15 @@ function confetti(el, color) {
   setTimeout(() => layer.remove(), 900);
 }
 
+const SERVICES_KEY = 'moodflix_services';
+function loadServices() {
+  try {
+    return JSON.parse(localStorage.getItem(SERVICES_KEY) || '[]');
+  } catch {
+    return [];
+  }
+}
+
 export const LANGS = [
   ['any', 'Any language'], ['en', 'English'], ['hi', 'Hindi'], ['ur', 'Urdu'], ['pa', 'Punjabi'],
   ['ko', 'Korean'], ['ja', 'Japanese'], ['tr', 'Turkish'], ['es', 'Spanish'], ['fr', 'French'],
@@ -47,7 +56,39 @@ export default function Discover({ user, requireLogin, profile, setProfile, onWa
     const c = MOODS[mood]?.color;
     if (c) document.documentElement.style.setProperty('--mood', c);
   }, [mood]);
-  const [prefs, setPrefs] = useState({ runtime: 'any', era: 'any', language: 'any', minRating: 6 });
+  const [prefs, setPrefs] = useState(() => ({
+    runtime: 'any',
+    era: 'any',
+    language: 'any',
+    minRating: 6,
+    region: getRegion(),
+    services: loadServices(),
+    onlyStreamable: false,
+  }));
+  const [regionProviders, setRegionProviders] = useState(null);
+
+  // Remember country and services between visits.
+  useEffect(() => {
+    saveRegion(prefs.region);
+    try {
+      localStorage.setItem(SERVICES_KEY, JSON.stringify(prefs.services));
+    } catch {
+      /* ignore */
+    }
+  }, [prefs.region, prefs.services]);
+
+  // Load the list of services for the chosen country.
+  useEffect(() => {
+    if (!hasTmdbKey) return;
+    let alive = true;
+    setRegionProviders(null);
+    getRegionProviders(prefs.region)
+      .then((list) => alive && setRegionProviders(list))
+      .catch(() => alive && setRegionProviders([]));
+    return () => {
+      alive = false;
+    };
+  }, [prefs.region]);
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -104,7 +145,7 @@ export default function Discover({ user, requireLogin, profile, setProfile, onWa
       const list = await recommend({ moodKey: m, prefs, profile });
       if (id !== requestId.current) return;
       setResults(list);
-      if (!list.length) setError('Nothing matched these filters — try another language, era or a lower rating.');
+      if (!list.length) setError(prefs.services.length || prefs.onlyStreamable ? 'Nothing matched on your services — select more services, or turn off the streaming filter.' : 'Nothing matched these filters — try another language, era or a lower rating.');
     } catch (e) {
       if (id === requestId.current) setError(e.message);
     } finally {
@@ -194,6 +235,7 @@ export default function Discover({ user, requireLogin, profile, setProfile, onWa
           <span className="tune-meta">
             {profile.favGenres.length} genres · {liked.length} favourite movies
             {prefs.language !== 'any' && ` · ${LANGS.find(([v]) => v === prefs.language)?.[1]}`}
+            {prefs.services.length > 0 && ` · ${prefs.services.length} service${prefs.services.length > 1 ? 's' : ''}`}
           </span>
         </summary>
         <p className="tune-note" role="status">
@@ -287,6 +329,59 @@ export default function Discover({ user, requireLogin, profile, setProfile, onWa
                   onChange={(e) => setPrefs({ ...prefs, minRating: Number(e.target.value) })} />
               </label>
             </div>
+
+            <h3 className="wtw-heading">Where you watch</h3>
+            <label className="field">
+              Your country
+              <select
+                value={prefs.region}
+                onChange={(e) => setPrefs({ ...prefs, region: e.target.value, services: [] })}
+              >
+                {COUNTRIES.map(([c, n]) => <option key={c} value={c}>{n}</option>)}
+              </select>
+            </label>
+
+            <p className="field-label">My services <span className="muted">— only show movies on these</span></p>
+            {regionProviders === null ? (
+              <p className="muted small-text">Loading services…</p>
+            ) : regionProviders.length === 0 ? (
+              <p className="muted small-text">
+                No streaming data for {countryName(prefs.region)}. Pick a nearby country to see services.
+              </p>
+            ) : (
+              <div className="services">
+                {regionProviders.map((p) => {
+                  const on = prefs.services.includes(p.provider_id);
+                  return (
+                    <button
+                      key={p.provider_id}
+                      className={`service ${on ? 'on' : ''}`}
+                      aria-pressed={on}
+                      title={p.provider_name}
+                      onClick={() =>
+                        setPrefs({
+                          ...prefs,
+                          services: on ? prefs.services.filter((x) => x !== p.provider_id) : [...prefs.services, p.provider_id],
+                        })
+                      }
+                    >
+                      {p.logo_path ? <img src={img(p.logo_path, 'w92')} alt="" /> : null}
+                      <span>{p.provider_name}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+            {!prefs.services.length && (
+              <label className="check">
+                <input
+                  type="checkbox"
+                  checked={prefs.onlyStreamable}
+                  onChange={(e) => setPrefs({ ...prefs, onlyStreamable: e.target.checked })}
+                />
+                Only show movies I can stream in {countryName(prefs.region)}
+              </label>
+            )}
           </div>
         </div>
       </details>
@@ -316,6 +411,7 @@ export default function Discover({ user, requireLogin, profile, setProfile, onWa
               <MovieCard
                 key={m.id}
                 movie={m}
+                region={prefs.region}
                 onLike={(x) => mark(x, 'liked')}
                 onDislike={(x) => mark(x, 'disliked')}
                 onSeen={(x) => mark(x, 'seen')}
