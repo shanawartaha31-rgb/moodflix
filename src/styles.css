@@ -471,3 +471,232 @@ button.guest { background: none; border: 1px dashed var(--line); color: var(--mu
 .updating::before { content: ''; width: 14px; height: 14px; border-radius: 50%; border: 2px solid var(--line); border-top-color: var(--amber); animation: spin 0.8s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
 .grid.is-updating { opacity: 0.45; pointer-events: none; transition: opacity 0.2s; }
+
+/* =========================================================
+   Mood illustrations — still by default, alive on hover/focus/selected
+   ========================================================= */
+.mi { display: block; color: var(--tile, var(--amber)); overflow: visible; flex-shrink: 0; }
+.mi :is(.mi-steam, .mi-drop, .mi-speed, .mi-bolt, .mi-ghost, .mi-eyes, .mi-heart, .mi-heart-mini, .mi-z, .mi-die, .mi-sun, .mi-moon) { transform-box: fill-box; transform-origin: center; }
+.chip .mi, .members .mi { display: inline-block; vertical-align: -4px; }
+
+.mood-art {
+  display: grid; place-items: center;
+  width: 64px; height: 64px; margin: -4px 0 8px -6px;
+  border-radius: 50%;
+  background: radial-gradient(circle, color-mix(in srgb, var(--tile) 22%, transparent) 0 45%, transparent 70%);
+  transition: transform 0.25s ease;
+}
+.mood:hover .mood-art, .mood.on .mood-art { transform: scale(1.08); }
+.results-icon { display: inline-grid; vertical-align: middle; margin-right: 4px; }
+.mood-pending { display: inline-block; width: 14px; height: 14px; border-radius: 50%; border: 2px dashed var(--muted); vertical-align: -2px; }
+
+/* Still unless the tile is hovered, focused or selected (chips and member lists stay still). */
+.mood:not(:hover, :focus-visible, .on) .mi *,
+.chip .mi *,
+.members .mi * { animation: none !important; }
+
+/* Happy: rays turn */
+.mi-rays { transform-box: view-box; transform-origin: 24px 24px; animation: mi-turn 6s linear infinite; }
+@keyframes mi-turn { to { transform: rotate(360deg); } }
+
+/* Comfort: steam rises */
+.mi-steam { opacity: 0.7; animation: mi-steam 2.4s ease-in-out infinite; }
+.mi-steam.s2 { animation-delay: 0.5s; }
+.mi-steam.s3 { animation-delay: 1s; }
+@keyframes mi-steam { 0% { transform: translateY(3px); opacity: 0; } 40% { opacity: 0.9; } 100% { transform: translateY(-5px); opacity: 0; } }
+
+/* Cry: rain falls */
+.mi-drop { animation: mi-rain 1.2s linear infinite; }
+.mi-drop.d2 { animation-delay: 0.4s; }
+.mi-drop.d3 { animation-delay: 0.8s; }
+@keyframes mi-rain { 0% { transform: translateY(-3px); opacity: 0; } 30% { opacity: 1; } 100% { transform: translateY(6px); opacity: 0; } }
+
+/* Pumped: bolt flashes, speed lines rush */
+.mi-bolt { animation: mi-flash 1.6s ease-in-out infinite; }
+@keyframes mi-flash { 0%, 100% { transform: scale(1); filter: none; } 8% { transform: scale(1.12) rotate(-4deg); filter: drop-shadow(0 0 6px currentColor); } 16% { transform: scale(1); } 22% { filter: drop-shadow(0 0 4px currentColor); } }
+.mi-speed { animation: mi-rush 0.8s linear infinite; }
+.mi-speed.l2 { animation-delay: 0.25s; }
+.mi-speed.l3 { animation-delay: 0.5s; }
+@keyframes mi-rush { 0% { transform: translateX(4px); opacity: 0; } 40% { opacity: 1; } 100% { transform: translateX(-6px); opacity: 0; } }
+
+/* Scare: ghost floats and blinks */
+.mi-ghost { animation: mi-float 2.6s ease-in-out infinite; }
+@keyframes mi-float { 0%, 100% { transform: translateY(0) rotate(-2deg); } 50% { transform: translateY(-4px) rotate(2deg); } }
+.mi-eyes { animation: mi-blink 3.2s infinite; }
+@keyframes mi-blink { 0%, 92%, 100% { transform: scaleY(1); } 95% { transform: scaleY(0.1); } }
+
+/* Curious: atom spins */
+.mi-atom { transform-box: view-box; transform-origin: 24px 24px; animation: mi-turn 5s linear infinite; }
+
+/* Romantic: heartbeat + a little heart drifting up */
+.mi-heart { animation: mi-beat 1.1s ease-in-out infinite; }
+@keyframes mi-beat { 0%, 100% { transform: scale(1); } 15% { transform: scale(1.14); } 30% { transform: scale(0.98); } 45% { transform: scale(1.08); } }
+.mi-heart-mini { animation: mi-drift 2.2s ease-out infinite; }
+@keyframes mi-drift { 0% { transform: translate(-4px, 8px) scale(0.6); opacity: 0; } 30% { opacity: 1; } 100% { transform: translate(2px, -6px) scale(1); opacity: 0; } }
+
+/* Chill: z's drift up */
+.mi-z { animation: mi-zz 2.6s ease-in-out infinite; }
+.mi-z.z2 { animation-delay: 1.3s; }
+@keyframes mi-zz { 0% { transform: translate(-3px, 4px) scale(0.7); opacity: 0; } 40% { opacity: 1; } 100% { transform: translate(3px, -5px) scale(1.1); opacity: 0; } }
+
+/* Surprise: die tumbles */
+.mi-die { animation: mi-tumble 1.8s cubic-bezier(.5, 0, .3, 1.4) infinite; }
+@keyframes mi-tumble { 0% { transform: rotate(0) translateY(0); } 25% { transform: rotate(100deg) translateY(-4px); } 50%, 100% { transform: rotate(180deg) translateY(0); } }
+
+/* Small screens: icons slightly smaller and centred */
+@media (max-width: 760px) {
+  .mood-art { width: 52px; height: 52px; margin: 0 0 4px; }
+  .mood-art .mi { width: 40px; height: 40px; }
+}
+
+/* =========================================================
+   Joyful layer — more colour, more bounce
+   ========================================================= */
+:root {
+  --ink: #171332;
+  --ink-2: #211c42;
+  --ink-3: #2c2655;
+  --line: #3d3670;
+  --pink: #ff6fb5;
+  --cyan: #33d1ff;
+  --violet: #8b6cff;
+  --sunny: #ffc93c;
+  --joy: linear-gradient(100deg, var(--sunny), #ff8a4c 45%, var(--pink));
+  --r-lg: 26px;
+  --r-md: 20px;
+}
+
+/* Several drifting colour lights instead of one */
+body::before {
+  inset: -25vh -20vw auto;
+  height: 95vh;
+  background:
+    radial-gradient(38% 50% at 22% 8%, color-mix(in srgb, var(--mood) 45%, transparent), transparent 70%),
+    radial-gradient(30% 40% at 80% 4%, color-mix(in srgb, var(--pink) 30%, transparent), transparent 70%),
+    radial-gradient(30% 45% at 60% 45%, color-mix(in srgb, var(--cyan) 14%, transparent), transparent 70%);
+  animation: drift 18s ease-in-out infinite alternate;
+}
+@keyframes drift { to { transform: translate3d(4vw, 3vh, 0) scale(1.06); } }
+
+/* Bright, warm gradient headings */
+.hero-title, .lobby-intro .hero-title {
+  background: linear-gradient(95deg, #fff3c4 0%, var(--sunny) 25%, #ff8a4c 55%, var(--pink) 80%, var(--violet) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  padding-bottom: 0.08em;
+}
+.logo { background: var(--joy); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.logo-mark { background: conic-gradient(from 200deg, var(--sunny), var(--pink), var(--violet), var(--cyan), var(--sunny)); box-shadow: 0 0 18px color-mix(in srgb, var(--mood) 80%, transparent); animation: spinslow 12s linear infinite; }
+@keyframes spinslow { to { transform: rotate(360deg); } }
+
+/* Buttons: sunny gradient, springy */
+button.primary {
+  background: var(--joy);
+  border: 0;
+  color: #2a1030;
+  box-shadow: 0 8px 22px -10px #ff6fb5;
+}
+button.primary:hover:not(:disabled) { background: var(--joy); filter: brightness(1.08); transform: translateY(-1px); }
+button { border-radius: 14px; }
+button:active:not(:disabled) { transform: scale(0.97); }
+
+.topbar nav { background: color-mix(in srgb, var(--ink-2) 80%, transparent); backdrop-filter: blur(8px); }
+.topbar nav button.active { background: var(--joy); color: #2a1030; }
+
+/* Mood tiles: filled with their colour, sticker-like */
+.mood {
+  border: 0;
+  border-radius: 22px;
+  background:
+    radial-gradient(120% 90% at 0% 0%, color-mix(in srgb, var(--tile) 42%, transparent), transparent 60%),
+    color-mix(in srgb, var(--tile) 14%, var(--ink-2));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--tile) 30%, transparent);
+  transition: transform 0.22s cubic-bezier(.3, 1.6, .5, 1), background 0.2s, box-shadow 0.2s;
+}
+.mood:nth-child(odd):hover:not(:disabled) { transform: translateY(-4px) rotate(-1.5deg); }
+.mood:nth-child(even):hover:not(:disabled) { transform: translateY(-4px) rotate(1.5deg); }
+.mood:hover:not(:disabled) {
+  background:
+    radial-gradient(120% 90% at 0% 0%, color-mix(in srgb, var(--tile) 55%, transparent), transparent 65%),
+    color-mix(in srgb, var(--tile) 20%, var(--ink-2));
+  box-shadow: inset 0 0 0 1.5px var(--tile), 0 14px 30px -14px var(--tile);
+}
+.mood.on {
+  background: linear-gradient(150deg, color-mix(in srgb, var(--tile) 100%, #fff 18%), var(--tile));
+  color: #1a1230;
+  box-shadow: 0 16px 44px -12px var(--tile);
+  transform: translateY(-2px);
+}
+.mood.on .blurb { color: #1a1230b8; }
+.mood.on .mi { color: #1a1230; }
+.mood.on .mood-art { background: radial-gradient(circle, #ffffff8c 0 45%, transparent 70%); }
+.mood-art { background: radial-gradient(circle, color-mix(in srgb, var(--tile) 35%, transparent) 0 45%, transparent 70%); }
+
+/* Confetti burst */
+.confetti { position: fixed; z-index: 60; pointer-events: none; width: 0; height: 0; }
+.confetti span {
+  position: absolute; width: 8px; height: 12px; border-radius: 2px;
+  animation: pop 0.85s cubic-bezier(.2, .7, .3, 1) forwards;
+}
+@keyframes pop {
+  0% { transform: translate(-50%, -50%) scale(0.4); opacity: 1; }
+  100% { transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy) + 40px)) rotate(var(--rot)) scale(1); opacity: 0; }
+}
+
+/* Genre chips get their own colours */
+.chip { border-radius: 999px; }
+.chip.genre:hover:not(:disabled) { border-color: var(--chip); }
+.chip.genre.on { background: var(--chip); border-color: var(--chip); color: #1a1230; font-weight: 700; }
+.chip.on:not(.genre):not(.mood-chip) { background: color-mix(in srgb, var(--pink) 22%, var(--ink-3)); border-color: var(--pink); color: #ffd6ea; }
+.mood-chip.on { background: var(--tile); border-color: var(--tile); color: #1a1230; font-weight: 700; }
+.mood-chip.on .mi { color: #1a1230; }
+
+/* Panels pick up a hint of colour */
+.tune { background: linear-gradient(160deg, color-mix(in srgb, var(--violet) 10%, var(--ink-2)), var(--ink-2) 60%); }
+.card { background: linear-gradient(160deg, color-mix(in srgb, var(--violet) 7%, var(--ink-2)), var(--ink-2) 55%); }
+.guest-banner {
+  border: 0;
+  background:
+    linear-gradient(var(--ink-2), var(--ink-2)) padding-box,
+    linear-gradient(100deg, var(--sunny), var(--pink), var(--violet), var(--cyan)) border-box;
+  border: 1.5px solid transparent;
+}
+.guest-banner strong { background: var(--joy); -webkit-background-clip: text; background-clip: text; color: transparent; font-size: 1.1em; }
+
+/* Movie cards */
+.poster { border-radius: 18px; }
+.poster:hover:not(:disabled) { transform: translateY(-5px) rotate(-0.6deg); }
+.rating { color: #1a1230; background: var(--sunny); backdrop-filter: none; }
+.why { display: flex; gap: 8px; align-items: baseline; }
+.why::before { content: ''; flex-shrink: 0; width: 8px; height: 8px; border-radius: 50%; background: var(--mood); box-shadow: 0 0 10px var(--mood); transform: translateY(-1px); }
+.tags .tag:nth-child(1) { color: #9fe9ff; border-color: #2f6e86; background: #18324a; }
+.tags .tag:nth-child(2) { color: #ffc6e3; border-color: #7a3a63; background: #3a1b37; }
+.quick button.icon:hover:not(:disabled) { background: var(--ink-3); transform: translateY(-2px) scale(1.06); }
+
+/* Watch party */
+.lobby-option { border-radius: 26px; }
+.lobby-option.host {
+  background: linear-gradient(150deg, color-mix(in srgb, var(--pink) 30%, var(--ink-2)), color-mix(in srgb, var(--violet) 18%, var(--ink-2)) 60%, var(--ink-2));
+  border-color: color-mix(in srgb, var(--pink) 45%, var(--line));
+}
+.lobby-option:not(.host) { background: linear-gradient(150deg, color-mix(in srgb, var(--cyan) 18%, var(--ink-2)), var(--ink-2) 65%); border-color: color-mix(in srgb, var(--cyan) 35%, var(--line)); }
+.code { border: 0; background: var(--joy); color: #2a1030; }
+.controls button:first-child { background: var(--joy); }
+.reaction-bar button { background: color-mix(in srgb, var(--violet) 18%, var(--ink-2)); }
+.reaction-bar button:hover:not(:disabled) { transform: translateY(-4px) scale(1.15) rotate(-6deg); background: color-mix(in srgb, var(--pink) 25%, var(--ink-2)); }
+
+/* History numbers in colour */
+.stat:nth-child(1) strong { color: var(--sunny); }
+.stat:nth-child(2) strong { color: var(--pink); }
+.stat:nth-child(3) strong { color: var(--cyan); }
+.stat:nth-child(4) strong { color: #5be3a1; }
+.stat.wide strong { background: var(--joy); -webkit-background-clip: text; background-clip: text; color: transparent; }
+
+/* Modal */
+.modal { background: radial-gradient(90% 60% at 0% 0%, color-mix(in srgb, var(--pink) 22%, var(--ink-2)), var(--ink-2) 65%), var(--ink-2); }
+.modal h2 { background: var(--joy); -webkit-background-clip: text; background-clip: text; color: transparent; }
+
+@media (max-width: 760px) {
+  .mood:nth-child(odd):hover:not(:disabled), .mood:nth-child(even):hover:not(:disabled) { transform: none; }
+}

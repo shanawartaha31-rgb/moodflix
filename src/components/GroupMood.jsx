@@ -1,6 +1,7 @@
 import { MOODS } from '../lib/recommender.js';
 import { img } from '../lib/tmdb.js';
 import { LANGS } from './Discover.jsx';
+import MoodIcon from './MoodIcon.jsx';
 
 /**
  * Everyone picks a mood → anyone presses "Find a movie for all of us" →
@@ -30,15 +31,15 @@ export default function GroupMood({
       <div className="mood-mini">
         {Object.entries(MOODS).map(([key, m]) => (
           <button key={key} className={`chip mood-chip ${myMood === key ? 'on' : ''}`} style={{ '--tile': m.color }} onClick={() => onPickMood(key)} aria-pressed={myMood === key}>
-            {m.emoji} {m.label}
+            <MoodIcon mood={key} size={20} /> {m.label}
           </button>
         ))}
       </div>
 
       <div className="room-moods">
         {members.map((m) => (
-          <span key={m.id} className="chip">
-            {MOODS[m.mood]?.emoji || '…'} {m.name}
+          <span key={m.id} className="chip" style={{ '--tile': MOODS[m.mood]?.color }}>
+            {MOODS[m.mood] ? <MoodIcon mood={m.mood} size={18} /> : <span className="mood-pending" aria-hidden="true" />} {m.name}
             {m.id === myId && ' (you)'}
           </span>
         ))}

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { supabase } from '../lib/supabase.js';
 import SyncedPlayer from './SyncedPlayer.jsx';
 import GroupMood from './GroupMood.jsx';
+import MoodIcon from './MoodIcon.jsx';
 import { MOODS, recommendGroup, shareableTaste } from '../lib/recommender.js';
 import { getTrailerKey } from '../lib/tmdb.js';
 import { moveTo, slimMovie } from '../lib/storage.js';
@@ -540,8 +541,8 @@ export default function WatchParty({ user, requireLogin, profile, setProfile, in
         <h3>Watching ({members.length})</h3>
         <ul className="members">
           {members.map((m, i) => (
-            <li key={m.id}>
-              {MOODS[m.mood]?.emoji} {m.name} {m.id === clientId && <span className="muted">(you)</span>} {i === 0 && <span title="Keeps everyone in sync">⭐</span>}
+            <li key={m.id} style={{ '--tile': MOODS[m.mood]?.color }}>
+              {MOODS[m.mood] && <MoodIcon mood={m.mood} size={18} />} {m.name} {m.id === clientId && <span className="muted">(you)</span>} {i === 0 && <span title="Keeps everyone in sync">⭐</span>}
             </li>
           ))}
         </ul>

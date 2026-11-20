@@ -2,6 +2,34 @@ import { useEffect, useRef, useState } from 'react';
 import { GENRES, MOODS, recommend } from '../lib/recommender.js';
 import { searchMovies, getTrailerKey, hasTmdbKey, img } from '../lib/tmdb.js';
 import MovieCard from './MovieCard.jsx';
+import MoodIcon from './MoodIcon.jsx';
+
+const GENRE_COLORS = ['#FFC93C', '#FF6FB5', '#8B6CFF', '#33D1FF', '#5BE3A1', '#FF8A4C', '#C6F15A', '#FF5D7A'];
+const genreColor = (id) => GENRE_COLORS[Object.keys(GENRES).indexOf(String(id)) % GENRE_COLORS.length];
+
+/** A small confetti burst in the mood's colour from the tapped tile. */
+function confetti(el, color) {
+  if (!el || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const r = el.getBoundingClientRect();
+  const layer = document.createElement('div');
+  layer.className = 'confetti';
+  layer.style.left = `${r.left + r.width / 2}px`;
+  layer.style.top = `${r.top + r.height / 2}px`;
+  const colors = [color, '#ffffff', '#FF6FB5', '#33D1FF', '#FFC93C'];
+  for (let i = 0; i < 18; i++) {
+    const bit = document.createElement('span');
+    const angle = (Math.PI * 2 * i) / 18 + Math.random() * 0.4;
+    const dist = 60 + Math.random() * 70;
+    bit.style.setProperty('--dx', `${Math.cos(angle) * dist}px`);
+    bit.style.setProperty('--dy', `${Math.sin(angle) * dist - 30}px`);
+    bit.style.setProperty('--rot', `${Math.random() * 540 - 270}deg`);
+    bit.style.background = colors[i % colors.length];
+    if (i % 3 === 0) bit.style.borderRadius = '50%';
+    layer.appendChild(bit);
+  }
+  document.body.appendChild(layer);
+  setTimeout(() => layer.remove(), 900);
+}
 
 export const LANGS = [
   ['any', 'Any language'], ['en', 'English'], ['hi', 'Hindi'], ['ur', 'Urdu'], ['pa', 'Punjabi'],
@@ -146,10 +174,13 @@ export default function Discover({ user, requireLogin, profile, setProfile, onWa
               key={key}
               className={`mood ${mood === key ? 'on' : ''}`}
               style={{ '--tile': m.color }}
-              onClick={() => run(key)}
+              onClick={(e) => {
+                if (mood !== key) confetti(e.currentTarget, m.color);
+                run(key);
+              }}
               aria-pressed={mood === key}
             >
-              <span className="emoji" aria-hidden="true">{m.emoji}</span>
+              <span className="mood-art"><MoodIcon mood={key} /></span>
               <strong>{m.label}</strong>
               <span className="blurb">{m.blurb}</span>
             </button>
@@ -175,7 +206,8 @@ export default function Discover({ user, requireLogin, profile, setProfile, onWa
               {Object.entries(GENRES).map(([id, name]) => (
                 <button
                   key={id}
-                  className={`chip ${profile.favGenres.includes(Number(id)) ? 'on' : ''}`}
+                  className={`chip genre ${profile.favGenres.includes(Number(id)) ? 'on' : ''}`}
+                  style={{ '--chip': genreColor(id) }}
                   onClick={() => toggleFav(Number(id))}
                   aria-pressed={profile.favGenres.includes(Number(id))}
                 >
@@ -271,7 +303,8 @@ export default function Discover({ user, requireLogin, profile, setProfile, onWa
         <section className="results">
           <div className="results-head">
             <h2>
-              <span aria-hidden="true">{MOODS[mood]?.emoji}</span> {MOODS[mood]?.blurb}
+              <span className="results-icon" style={{ '--tile': MOODS[mood]?.color }}><MoodIcon mood={mood} size={34} /></span>
+              {MOODS[mood]?.blurb}
             </h2>
             <div className="results-tools">
               {updating && <span className="updating" role="status">Updating picks…</span>}
